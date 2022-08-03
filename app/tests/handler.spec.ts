@@ -7,7 +7,7 @@ import configuration from '../src/infrastructure/configuration/configuration';
 const sandbox = sinon.createSandbox();
 const uuid = `${configuration.ENVIRONMENT.toUpperCase()}#TESTE#${(new Date()).getTime()}`;
 
-describe('Tests suite - EXAME - DIGITAL.', () => {
+describe('Tests suite - EXAMPLE.', () => {
   afterEach(async () => {
     sandbox.reset();
     sandbox.restore();

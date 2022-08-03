@@ -1,4 +1,4 @@
-import CODE_MESSAGES from 'constants/codeMessages';
+import CODE_MESSAGES from '../constants/codeMessages';
 import configuration from '../infrastructure/configuration/configuration';
 import Http from '../classes/http';
 import Base from '../classes/partner';
@@ -29,7 +29,6 @@ export default class Example extends Base implements Sqs {
 
   private exampleDigitalResponseStatus: number;
 
-  private apiUrlOptin: string;
 
   public get getExampleDigitalResponse() {
     return this.exampleDigitalResponse();
@@ -48,12 +47,11 @@ export default class Example extends Base implements Sqs {
   }
 
   public async exampleAPICall(body: ExampleInputInterface) {
-    this.apiKey = configuration.URL;
-    this.apiUrl = configuration.KEY;
+    this.apiKey = configuration.KEY;
+    this.apiUrl = configuration.URL;
     this.exampleDigitalBody = body;
     this.formatExampleDigitalEmailEditData();
-    this.apiUrlOptin = `${this.apiUrl}`;
-    this.http.setUrl = this.apiUrlOptin;
+    this.http.setUrl = `${this.apiUrl}`;
     this.http.setHeaders = { Authorization: `Bearer ${this.apiKey}` };
     this.http.setBody = this.formatExampleEmailEditData;
     this.exampleDigitalResponse = await this.http.post();

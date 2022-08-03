@@ -1,7 +1,7 @@
 import CODE_MESSAGES from '../constants/codeMessages';
 import configuration from '../infrastructure/configuration/configuration';
 import Http from '../classes/http';
-import Base from '../classes/partner';
+import Base from '../classes/base';
 import Sqs from '../interfaces/Sqs';
 import SqsService from '../classes/sqs';
 import { ExampleInputInterface } from '../interfaces/exampleInputInterface';

@@ -1,0 +1,93 @@
+{
+  "name": "boilerplate-typescript",
+  "version": "1.0.1",
+  "description": "repositório de integração com o parceiro hub-serasa",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "cross-env NODE_ENV=test ./node_modules/.bin/mocha -r ts-node/register app/tests/**/*.spec.ts --timeout 400000",
+    "mocha": "cross-env NODE_ENV=test ./node_modules/.bin/mocha -r ts-node/register --timeout 400000",
+    "test:cov": "cross-env NODE_ENV=test nyc --reporter=text ./node_modules/.bin/mocha -r ts-node/register app/tests/*.ts --timeout 400000",
+    "test:html": "cross-env NODE_ENV=test nyc --reporter=lcov ./node_modules/.bin/mocha -r ts-node/register app/tests/*.ts --timeout 400000",
+    "check:cov": "cross-env NODE_ENV=test nyc --check-coverage=true ./node_modules/.bin/mocha -r ts-node/register app/tests/*.ts --timeout 400000",
+    "lint": "./node_modules/.bin/eslint \"./**/*.ts\" --max-warnings=0",
+    "build": "npm run compile:server",
+    "compile:server": "tsc",
+    "release": "HUSKY_SKIP_HOOKS=1 standard-version",
+    "release:hotfix": "HUSKY_SKIP_HOOKS=1 standard-version --release-as patch",
+    "tsc": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/andre-gomes-oliveira/boilerplate-typescript.git"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "concurrently -r \"lint-staged\" \"npm run tsc --noEmit\"",
+      "pre-push": "concurrently -r \"npm run check:cov\" \"cfn-lint templates/*.yaml\"",
+      "prepare-commit-msg": "exec < /dev/tty && ./node_modules/.bin/git-cz --hook || true",
+      "post-merge": "npm install"
+    }
+  },
+  "keywords": [],
+  "author": "André Gomes de Oliveira",
+  "license": "ISC",
+  "lint-staged": {
+    "*.ts": "npm run lint --cache --fix"
+  },
+  "dependencies": {
+    "aws-lambda": "^1.0.6",
+    "aws-sdk": "^2.709.0",
+    "axios": "^0.27.2",
+    "axios-retry": "^3.3.1",
+    "http": "0.0.1-security",
+    "joi": "^17.6.0",
+    "joi-i18n": "^13.1.4",
+    "jwt-decode": "^3.1.2",
+    "lodash": "^4.17.20",
+    "mocha": "^8.1.3",
+    "nodemon": "^2.0.4",
+    "sinon": "^12.0.1",
+    "ts-node": "^9.0.0",
+    "underscore": "^1.10.2",
+    "uuid": "^8.3.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.101",
+    "@types/chai": "^4.3.1",
+    "@types/mocha": "^9.1.1",
+    "@types/node": "^16.0.0",
+    "@types/sinon": "^10.0.13",
+    "@types/uuid": "^8.3.2",
+    "@typescript-eslint/eslint-plugin": "^5.32.0",
+    "@typescript-eslint/parser": "^5.32.0",
+    "chai": "^4.3.4",
+    "concurrently": "^7.3.0",
+    "cross-env": "^7.0.3",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^8.21.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-import-resolver-typescript": "^3.4.0",
+    "eslint-plugin-import": "^2.26.0",
+    "husky": "^8.0.1",
+    "lint-staged": "^13.0.3",
+    "ts-node": "^10.9.1",
+    "typedoc": "^0.23.10",
+    "typescript": "^4.7.4"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "nyc": {
+    "branches": "50",
+    "lines": "50",
+    "functions": "50",
+    "statements": "50",
+    "exclude": [
+      "**/*.spec.ts",
+      "**/aws/*.ts",
+      "**/classes/http.ts"
+    ]
+  }
+}

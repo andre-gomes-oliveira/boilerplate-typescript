@@ -1,0 +1,179 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Zappts Lambda API
+
+Globals:
+  Function:
+    Timeout: 30
+
+Parameters:
+  Stage:
+    Type: String
+  Region:
+    Type: String
+  Tenant:
+    Type: String
+  HasVPC:
+    Type: String
+  Subnet:
+    Type: String
+  SecurityGroupIds:
+    Type: List<AWS::EC2::SecurityGroup::Id>
+  Url:
+    Type: String
+  Key:
+    Type: String
+
+Conditions:
+  HasVPCCondition: !Equals [!Ref HasVPC, "true"]
+
+Resources:
+
+   #Lambda Role
+  LambdaRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - "events.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSXrayWriteOnlyAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/SecretsManagerReadWrite
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaSQSQueueExecutionRole
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/AmazonAPIGatewayInvokeFullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+      Policies:
+        - PolicyName: CooperDefaultLambdaPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - lambda:PublishVersion
+                  - lambda:InvokeFunction
+                  - apigateway:POST
+                  - sqs:*
+                Resource: "*"
+              - Effect: "Allow"
+                Action:
+                  - dynamoDB:*
+                Resource: "*"
+
+  # DEAD LETTER #
+  ExampleDeadLetterSqs:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${Stage}-${Tenant}-example-dlq
+      VisibilityTimeout: 60
+      MessageRetentionPeriod: 1209600
+      Tags:
+        - Key: Tenant
+          Value: !Ref Tenant
+        - Key: Environment
+          Value: !Ref Stage
+        - Key: Service
+          Value: SQS
+        - Key: Name
+          Value: !Sub ${Stage}-${Tenant}-example-dlq
+  ExampleDeadLetterQueueLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${Stage}-${Tenant}-example-dlq
+      Role: !GetAtt LambdaRole.Arn
+      CodeUri: ./../
+      Handler: dist/infrastructure/handler/dlq.dlq
+      Runtime: nodejs12.x
+      Timeout: 59
+      VpcConfig:
+        !If
+        - HasVPCCondition
+        - SubnetIds:
+            - !Ref Subnet
+          SecurityGroupIds: !Ref SecurityGroupIds
+        - !Ref AWS::NoValue
+      Tags:
+        Tenant: !Ref Tenant
+        Environment: !Ref Stage
+        Service: Lambda
+        Name: !Sub ${Stage}-${Tenant}-example-dlq
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          REGION: !Ref Region
+          TENANT: !Ref Tenant
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ExampleDeadLetterSqs.Arn
+            BatchSize: 1
+
+  #SQS Example
+  ExampleSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${Stage}-${Tenant}-example-sqs
+      DelaySeconds: 0
+      VisibilityTimeout: 60
+      MessageRetentionPeriod: 1209600
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ExampleDeadLetterSqs.Arn
+        maxReceiveCount: 4
+      ReceiveMessageWaitTimeSeconds: 0
+      Tags:
+        - Key: Tenant
+          Value: !Ref Tenant
+        - Key: Environment
+          Value: !Ref Stage
+        - Key: Service
+          Value: SQS
+        - Key: Name
+          Value: !Sub ${Stage}-${Tenant}-example-sqs
+
+  ExamplesSQSLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${Stage}-${Tenant}-example-sqs
+      Role: !GetAtt LambdaRole.Arn
+      CodeUri: ./../
+      Handler: dist/handler/example.exampleDigitalEmailEditDelivery
+      Runtime: nodejs12.x
+      Timeout: 30
+      VpcConfig:
+        !If
+        - HasVPCCondition
+        - SubnetIds:
+            - !Ref Subnet
+          SecurityGroupIds: !Ref SecurityGroupIds
+        - !Ref AWS::NoValue
+      Tags:
+        Tenant: !Ref Tenant
+        Environment: !Ref Stage
+        Service: Lambda
+        Name: !Sub ${Stage}-${Tenant}-example-sqs
+      Environment:
+        Variables:
+          STAGE: !Ref Stage
+          REGION: !Ref Region
+          TENANT: !Ref Tenant
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+          URL: !Ref Url
+          KEY: !Ref Key
+          ORIGIN_SQS_URL: !Ref ExampleSQS
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ExampleSQS.Arn
+            BatchSize: 1

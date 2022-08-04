@@ -1,7 +1,7 @@
 {
   "name": "boilerplate-typescript",
   "version": "1.0.1",
-  "description": "repositório de integração com o parceiro hub-serasa",
+  "description": "repositório d boilerplate para início de um microserviço node.js",
   "main": "src/server.js",
   "scripts": {
     "test": "cross-env NODE_ENV=test ./node_modules/.bin/mocha -r ts-node/register app/tests/**/*.spec.ts --timeout 400000",
